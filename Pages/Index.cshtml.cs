@@ -10,48 +10,47 @@ namespace XMLParser.Pages
 
         public async Task OnGet()
         {
+            string xmlUrl = "http://scripting.com/rss.xml";
             using (HttpClient client = new HttpClient())
+            using (Stream xmlStream = await client.GetStreamAsync(xmlUrl))
+            using (XmlReader xmlReader = XmlReader.Create(xmlStream))
             {
-                string xmlUrl = "http://scripting.com/rss.xml";
-                using (Stream xmlStream = await client.GetStreamAsync(xmlUrl))
+                while (xmlReader.Read())
                 {
-                    using (XmlReader xmlReader = XmlReader.Create(xmlStream))
+                    if (xmlReader.NodeType != XmlNodeType.Element || xmlReader.Name != "item")
+                        continue;
+
+                    ItemProperties item = new ItemProperties();
+
+                    while (xmlReader.Read())
                     {
-                        while (xmlReader.Read())
+                        if (xmlReader.NodeType != XmlNodeType.Element)
                         {
-                            if (xmlReader.NodeType == XmlNodeType.Element && xmlReader.Name == "item")
+                            if (xmlReader.NodeType == XmlNodeType.EndElement && xmlReader.Name == "item")
                             {
-                                ItemProperties item = new ItemProperties();
-                                while (xmlReader.Read())
-                                {
-                                    if (xmlReader.NodeType == XmlNodeType.Element)
-                                    {
-                                        switch (xmlReader.Name)
-                                        {
-                                            case "title":
-                                                item.Title = xmlReader.ReadElementContentAsString();
-                                                break;
-                                            case "description":
-                                                item.Description = xmlReader.ReadElementContentAsString();
-                                                break;
-                                            case "pubDate":
-                                                item.PubDate = xmlReader.ReadElementContentAsString();
-                                                break;
-                                            case "link":
-                                                item.Link = xmlReader.ReadElementContentAsString();
-                                                break;
-                                            case "guid":
-                                                item.Guid = xmlReader.ReadElementContentAsString();
-                                                break;
-                                        }
-                                    }
-                                    else if (xmlReader.NodeType == XmlNodeType.EndElement && xmlReader.Name == "item")
-                                    {
-                                        ItemsProperties.Add(item);
-                                        break;
-                                    }
-                                }
+                                ItemsProperties.Add(item);
+                                break;
                             }
+                            continue;
+                        }
+
+                        switch (xmlReader.Name)
+                        {
+                            case "title":
+                                item.Title = xmlReader.ReadElementContentAsString();
+                                break;
+                            case "description":
+                                item.Description = xmlReader.ReadElementContentAsString();
+                                break;
+                            case "pubDate":
+                                item.PubDate = xmlReader.ReadElementContentAsString();
+                                break;
+                            case "link":
+                                item.Link = xmlReader.ReadElementContentAsString();
+                                break;
+                            case "guid":
+                                item.Guid = xmlReader.ReadElementContentAsString();
+                                break;
                         }
                     }
                 }
@@ -59,6 +58,7 @@ namespace XMLParser.Pages
         }
     }
 }
+
 
 public class ItemProperties
 {
